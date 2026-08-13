@@ -49,12 +49,9 @@ export default function AuthForm() {
     }
 
     try {
-      // Replace localhost with your live Vercel backend URL
-const BACKEND_BASE_URL = 'https://imeta-1.vercel.app/'; 
-
-const endpoint = isSignup
-  ? `${BACKEND_BASE_URL}/api/signup`
-  : `${BACKEND_BASE_URL}/api/login`;
+      const endpoint = isSignup
+        ? 'http://localhost:5000/api/signup'
+        : 'http://localhost:5000/api/login';
 
       const payload = isSignup
         ? { name, email, password, age, college }
