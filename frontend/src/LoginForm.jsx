@@ -49,9 +49,10 @@ export default function AuthForm() {
     }
 
     try {
+      const apiBaseUrl = 'https://imeta-1.vercel.app';
       const endpoint = isSignup
-        ? 'http://localhost:5000/api/signup'
-        : 'http://localhost:5000/api/login';
+        ? `${apiBaseUrl}/api/signup`
+        : `${apiBaseUrl}/api/login`;
 
       const payload = isSignup
         ? { name, email, password, age, college }
