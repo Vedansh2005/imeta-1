@@ -1,0 +1,166 @@
+/* Card Container */
+.auth-card {
+  max-width: 420px;
+  margin: 40px auto;
+  padding: 28px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: #ffffff;
+}
+
+.auth-title {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #111827;
+}
+
+/* Form Layout */
+.form-group {
+  margin-bottom: 14px;
+}
+
+.form-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.form-col-1 {
+  flex: 1;
+}
+
+.form-col-2 {
+  flex: 2;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+  color: #374151;
+  font-weight: 500;
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  box-sizing: border-box;
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #0070f3;
+}
+
+/* Buttons */
+.submit-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: #0070f3;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background-color 0.2s ease;
+}
+
+.submit-btn:hover {
+  background-color: #0051a2;
+}
+
+.submit-btn:disabled {
+  background-color: #93c5fd;
+  cursor: not-allowed;
+}
+
+/* Toggle Text & Links */
+.toggle-text {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.toggle-link {
+  color: #0070f3;
+  cursor: pointer;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+/* Feedback Alert Messages */
+.feedback-message {
+  margin-top: 16px;
+  font-weight: 600;
+  text-align: center;
+  font-size: 14px;
+}
+
+.feedback-message.success {
+  color: #10b981;
+}
+
+.feedback-message.error {
+  color: #ef4444;
+}
+
+/* Dashboard View Styles */
+.dashboard-title {
+  text-align: center;
+  color: #10b981;
+  margin-bottom: 8px;
+}
+
+.dashboard-subtitle {
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+.profile-box {
+  background-color: #f9fafb;
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.profile-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 14px;
+  color: #374151;
+}
+
+.profile-row:last-child {
+  border-bottom: none;
+}
+
+.logout-btn {
+  width: 100%;
+  padding: 10px;
+  background-color: #ef4444;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.logout-btn:hover {
+  background-color: #dc2626;
+}
