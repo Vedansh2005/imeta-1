@@ -5,7 +5,7 @@ export default function AuthForm() {
   const [isSignup, setIsSignup] = useState(false);
   const [user, setUser] = useState(null);
 
-  // Form Fields
+  // Form fields
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -13,11 +13,17 @@ export default function AuthForm() {
   const [age, setAge] = useState('');
   const [college, setCollege] = useState('');
 
-  // Status & Feedback States
+  // Login OTP
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
+
+  // Status
   const [message, setMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Switch login/signup
   const toggleMode = () => {
     setIsSignup(!isSignup);
     setMessage('');
@@ -27,42 +33,197 @@ export default function AuthForm() {
     setConfirmPassword('');
     setAge('');
     setCollege('');
+    setOtp('');
+    setOtpSent(false);
+    setOtpVerified(false);
   };
 
+  // Logout
   const handleLogout = () => {
     setUser(null);
     setMessage('');
     setEmail('');
     setPassword('');
+    setOtp('');
+    setOtpSent(false);
+    setOtpVerified(false);
   };
 
+  // Send login OTP
+  const handleSendOtp = async () => {
+    if (!email || !password) {
+      setIsSuccess(false);
+      setMessage('Enter your email and password first.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setMessage('');
+
+      const response = await fetch(
+        'https://imeta-1.vercel.app/api/send-login-otp',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email,
+            password
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setOtpSent(true);
+        setOtpVerified(false);
+        setOtp('');
+        setIsSuccess(true);
+        setMessage(
+          'OTP generated. Check the backend console.'
+        );
+      } else {
+        setIsSuccess(false);
+        setMessage(
+          data.message || 'Failed to generate OTP.'
+        );
+      }
+
+    } catch (error) {
+      console.error(error);
+      setIsSuccess(false);
+      setMessage(
+        'Unable to connect to the backend server.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Verify login OTP
+  const handleVerifyOtp = async () => {
+    if (!otp) {
+      setIsSuccess(false);
+      setMessage('Please enter the OTP.');
+      return;
+    }
+
+    if (otp.length !== 6) {
+      setIsSuccess(false);
+      setMessage('OTP must contain 6 digits.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setMessage('');
+
+      const response = await fetch(
+        'https://imeta-1.vercel.app/api/verify-login-otp',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email,
+            otp
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setOtpVerified(true);
+        setIsSuccess(true);
+        setMessage(
+          'OTP verified. You can now log in.'
+        );
+      } else {
+        setOtpVerified(false);
+        setIsSuccess(false);
+        setMessage(
+          data.message || 'Invalid OTP.'
+        );
+      }
+
+    } catch (error) {
+      console.error(error);
+      setIsSuccess(false);
+      setMessage(
+        'Unable to connect to the backend server.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Login / signup
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage('');
 
-    if (isSignup && password !== confirmPassword) {
+    // Check signup password
+    if (
+      isSignup &&
+      password !== confirmPassword
+    ) {
       setIsSuccess(false);
       setMessage('Passwords do not match.');
       setLoading(false);
       return;
     }
 
+    // Check login OTP
+    if (
+      !isSignup &&
+      !otpVerified
+    ) {
+      setIsSuccess(false);
+      setMessage(
+        'Please verify the OTP before logging in.'
+      );
+      setLoading(false);
+      return;
+    }
+
     try {
-      const apiBaseUrl = 'https://imeta-1.vercel.app';
+      const apiBaseUrl =
+        'https://imeta-1.vercel.app';
+
       const endpoint = isSignup
         ? `${apiBaseUrl}/api/signup`
         : `${apiBaseUrl}/api/login`;
 
       const payload = isSignup
-        ? { name, email, password, age, college }
-        : { email, password };
+        ? {
+            name,
+            email,
+            password,
+            age,
+            college
+          }
+        : {
+            email,
+            password
+          };
 
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      const response = await fetch(
+        endpoint,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type':
+              'application/json'
+          },
+          body: JSON.stringify(payload)
+        }
+      );
 
       const data = await response.json();
 
@@ -71,152 +232,358 @@ export default function AuthForm() {
         setMessage(data.message);
 
         if (isSignup) {
+          // Registration complete
           setTimeout(() => {
             setIsSignup(false);
-            setMessage('Account created successfully! Please log in.');
+            setMessage(
+              'Account created successfully! Please log in.'
+            );
+            setName('');
+            setEmail('');
+            setPassword('');
+            setConfirmPassword('');
+            setAge('');
+            setCollege('');
+            setOtp('');
+            setOtpSent(false);
+            setOtpVerified(false);
           }, 1500);
         } else {
+          // Login complete
           setUser(data.user);
         }
+
       } else {
         setIsSuccess(false);
-        setMessage(data.message || 'Action failed.');
+        setMessage(
+          data.message || 'Action failed.'
+        );
       }
+
     } catch (error) {
+      console.error(error);
       setIsSuccess(false);
-      setMessage('Unable to connect to the backend server.');
+      setMessage(
+        'Unable to connect to the backend server.'
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  // DASHBOARD VIEW (Shown when user is logged in)
+  // Dashboard
   if (user) {
     return (
       <div className="auth-card">
-        <h2 className="dashboard-title">Welcome, {user.name}!</h2>
+        <h2 className="dashboard-title">
+          Welcome, {user.name}!
+        </h2>
+
         <p className="dashboard-subtitle">
           Your account is verified and authenticated.
         </p>
 
         <div className="profile-box">
           <div className="profile-row">
-            <strong>Full Name:</strong> <span>{user.name}</span>
+            <strong>Full Name:</strong>
+            <span>{user.name}</span>
           </div>
+
           <div className="profile-row">
-            <strong>Email:</strong> <span>{user.email}</span>
+            <strong>Email:</strong>
+            <span>{user.email}</span>
           </div>
+
           <div className="profile-row">
-            <strong>Age:</strong> <span>{user.age} years old</span>
+            <strong>Age:</strong>
+            <span>{user.age} years old</span>
           </div>
+
           <div className="profile-row">
-            <strong>College:</strong> <span>{user.college}</span>
+            <strong>College:</strong>
+            <span>{user.college}</span>
           </div>
         </div>
 
-        <button onClick={handleLogout} className="logout-btn">
+        <button
+          onClick={handleLogout}
+          className="logout-btn"
+        >
           Log Out
         </button>
       </div>
     );
   }
 
-  // AUTHENTICATION FORM VIEW (Login / Signup)
+  // Login / signup form
   return (
     <div className="auth-card">
       <h2 className="auth-title">
-        {isSignup ? 'Student Registration' : 'Welcome Back'}
+        {isSignup
+          ? 'Student Registration'
+          : 'Welcome Back'}
       </h2>
 
       <form onSubmit={handleSubmit}>
+
+        {/* Signup name */}
         {isSignup && (
           <div className="form-group">
-            <label className="form-label">Full Name</label>
+            <label className="form-label">
+              Full Name
+            </label>
+
             <input
               type="text"
               placeholder="John Doe"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) =>
+                setName(e.target.value)
+              }
               className="form-input"
+              required
             />
           </div>
         )}
 
+        {/* Email */}
         <div className="form-group">
-          <label className="form-label">Email Address</label>
-          <input
-            type="text"
-            placeholder="student@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="form-input"
-          />
+          <label className="form-label">
+            Email Address
+          </label>
+
+          <div
+            style={{
+              display: 'flex',
+              gap: '10px'
+            }}
+          >
+            <input
+              type="email"
+              placeholder="student@example.com"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+
+                if (!isSignup) {
+                  setOtpSent(false);
+                  setOtpVerified(false);
+                  setOtp('');
+                }
+              }}
+              className="form-input"
+              style={{ flex: 1 }}
+              required
+            />
+
+            {/* OTP button only on login */}
+            {!isSignup && (
+              <button
+                type="button"
+                onClick={handleSendOtp}
+                disabled={
+                  loading ||
+                  !email ||
+                  !password
+                }
+                className="submit-btn"
+                style={{ width: '130px' }}
+              >
+                {otpSent
+                  ? 'Resend OTP'
+                  : 'Send OTP'}
+              </button>
+            )}
+          </div>
         </div>
 
+        {/* Age and college */}
         {isSignup && (
           <div className="form-row">
             <div className="form-col-1">
-              <label className="form-label">Age</label>
+              <label className="form-label">
+                Age
+              </label>
+
               <input
                 type="number"
                 placeholder="20"
                 value={age}
-                onChange={(e) => setAge(e.target.value)}
+                onChange={(e) =>
+                  setAge(e.target.value)
+                }
                 className="form-input"
+                required
               />
             </div>
+
             <div className="form-col-2">
-              <label className="form-label">College / University</label>
+              <label className="form-label">
+                College / University
+              </label>
+
               <input
                 type="text"
                 placeholder="MIT, Harvard, etc."
                 value={college}
-                onChange={(e) => setCollege(e.target.value)}
+                onChange={(e) =>
+                  setCollege(e.target.value)
+                }
                 className="form-input"
+                required
               />
             </div>
           </div>
         )}
 
+        {/* Password */}
         <div className="form-group">
-          <label className="form-label">Password</label>
+          <label className="form-label">
+            Password
+          </label>
+
           <input
             type="password"
             placeholder="••••••••"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) =>
+              setPassword(e.target.value)
+            }
             className="form-input"
+            required
           />
         </div>
 
+        {/* Login OTP */}
+        {!isSignup && otpSent && (
+          <div className="form-group">
+            <label className="form-label">
+              Enter OTP
+            </label>
+
+            <div
+              style={{
+                display: 'flex',
+                gap: '10px'
+              }}
+            >
+              <input
+                type="text"
+                placeholder="Enter 6-digit OTP"
+                value={otp}
+                onChange={(e) => {
+                  const value =
+                    e.target.value.replace(
+                      /\D/g,
+                      ''
+                    );
+
+                  setOtp(
+                    value.slice(0, 6)
+                  );
+                }}
+                maxLength="6"
+                className="form-input"
+                style={{ flex: 1 }}
+                disabled={otpVerified}
+              />
+
+              <button
+                type="button"
+                onClick={handleVerifyOtp}
+                disabled={
+                  loading ||
+                  otp.length !== 6 ||
+                  otpVerified
+                }
+                className="submit-btn"
+                style={{ width: '130px' }}
+              >
+                {otpVerified
+                  ? 'Verified'
+                  : 'Verify OTP'}
+              </button>
+            </div>
+
+            {otpVerified && (
+              <div
+                style={{
+                  marginTop: '8px',
+                  color: 'green',
+                  fontSize: '14px'
+                }}
+              >
+                ✓ OTP verified successfully
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Confirm password */}
         {isSignup && (
           <div className="form-group">
-            <label className="form-label">Confirm Password</label>
+            <label className="form-label">
+              Confirm Password
+            </label>
+
             <input
               type="password"
               placeholder="••••••••"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={(e) =>
+                setConfirmPassword(
+                  e.target.value
+                )
+              }
               className="form-input"
+              required
             />
           </div>
         )}
 
-        <button type="submit" disabled={loading} className="submit-btn">
-          {loading ? 'Processing...' : isSignup ? 'Register' : 'Log In'}
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={
+            loading ||
+            (!isSignup && !otpVerified)
+          }
+          className="submit-btn"
+        >
+          {loading
+            ? 'Processing...'
+            : isSignup
+            ? 'Register'
+            : 'Log In'}
         </button>
       </form>
 
+      {/* Message */}
       {message && (
-        <div className={`feedback-message ${isSuccess ? 'success' : 'error'}`}>
+        <div
+          className={`feedback-message ${
+            isSuccess
+              ? 'success'
+              : 'error'
+          }`}
+        >
           {message}
         </div>
       )}
 
+      {/* Switch mode */}
       <div className="toggle-text">
-        {isSignup ? 'Already registered? ' : "Need an account? "}
-        <span onClick={toggleMode} className="toggle-link">
-          {isSignup ? 'Log In' : 'Sign Up'}
+        {isSignup
+          ? 'Already registered? '
+          : 'Need an account? '}
+
+        <span
+          onClick={toggleMode}
+          className="toggle-link"
+        >
+          {isSignup
+            ? 'Log In'
+            : 'Sign Up'}
         </span>
       </div>
     </div>
