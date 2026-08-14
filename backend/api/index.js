@@ -66,24 +66,43 @@ app.post('/api/send-login-otp', async (req, res) => {
     const otp = Math.floor(
       100000 + Math.random() * 900000
     ).toString();
+    const expiresAt = Date.now() + 5 * 60 * 1000;
 
-    // OTP expires in 5 minutes
+    // Save in-memory
     otpStore.set(email, {
       otp: otp,
-      expiresAt: Date.now() + 5 * 60 * 1000
+      expiresAt: expiresAt
     });
 
     // Reset previous verification
     verifiedLogins.delete(email);
 
-    // Show OTP in console
+    // Save to DB for Vercel serverless persistence
+    try {
+      await sql`
+        ALTER TABLE users 
+        ADD COLUMN IF NOT EXISTS otp_code VARCHAR(10), 
+        ADD COLUMN IF NOT EXISTS otp_expires_at BIGINT, 
+        ADD COLUMN IF NOT EXISTS is_otp_verified BOOLEAN DEFAULT FALSE
+      `;
+      await sql`
+        UPDATE users
+        SET otp_code = ${otp}, otp_expires_at = ${expiresAt}, is_otp_verified = FALSE
+        WHERE LOWER(email) = ${email}
+      `;
+    } catch (dbErr) {
+      console.log('Database OTP store notice:', dbErr.message);
+    }
+
+    // Show OTP in backend console log (visible in Vercel Runtime Logs)
     console.log('================================');
     console.log(`Login OTP for ${email}: ${otp}`);
     console.log('OTP valid for 5 minutes');
     console.log('================================');
 
     return res.status(200).json({
-      message: 'OTP generated successfully.'
+      message: 'OTP generated successfully.',
+      otp: otp
     });
 
   } catch (error) {
@@ -109,33 +128,43 @@ app.post('/api/verify-login-otp', async (req, res) => {
       });
     }
 
-    const storedOtp = otpStore.get(email);
+    let storedOtp = otpStore.get(email);
+    let validOtp = false;
 
-    if (!storedOtp) {
-      return res.status(400).json({
-        message: 'OTP not found. Please generate a new OTP.'
-      });
+    if (storedOtp && Date.now() <= storedOtp.expiresAt && storedOtp.otp === otp) {
+      validOtp = true;
+    } else {
+      // DB Fallback for Vercel Serverless Function stateless instances
+      try {
+        const users = await sql`
+          SELECT otp_code, otp_expires_at FROM users WHERE LOWER(email) = ${email}
+        `;
+        if (users.length > 0) {
+          const u = users[0];
+          if (u.otp_code === otp && Number(u.otp_expires_at) >= Date.now()) {
+            validOtp = true;
+          }
+        }
+      } catch (dbErr) {
+        console.log('Database OTP verify notice:', dbErr.message);
+      }
     }
 
-    // Check expiry
-    if (Date.now() > storedOtp.expiresAt) {
-      otpStore.delete(email);
-
+    if (!validOtp) {
       return res.status(400).json({
-        message: 'OTP has expired. Please generate a new OTP.'
-      });
-    }
-
-    // Check OTP
-    if (storedOtp.otp !== otp) {
-      return res.status(400).json({
-        message: 'Invalid OTP.'
+        message: 'Invalid or expired OTP.'
       });
     }
 
     // OTP verified
     otpStore.delete(email);
     verifiedLogins.add(email);
+
+    try {
+      await sql`
+        UPDATE users SET is_otp_verified = TRUE WHERE LOWER(email) = ${email}
+      `;
+    } catch (dbErr) {}
 
     console.log(`Login OTP verified for ${email}`);
 
@@ -266,7 +295,23 @@ app.post('/api/login', async (req, res) => {
     }
 
     // Check OTP verification
-    if (!verifiedLogins.has(email)) {
+    let isVerified = verifiedLogins.has(email);
+
+    if (!isVerified) {
+      // DB Fallback for Vercel Serverless Function stateless instances
+      try {
+        const checkUsers = await sql`
+          SELECT is_otp_verified FROM users WHERE LOWER(email) = ${email}
+        `;
+        if (checkUsers.length > 0 && checkUsers[0].is_otp_verified) {
+          isVerified = true;
+        }
+      } catch (dbErr) {
+        console.log('Database login check notice:', dbErr.message);
+      }
+    }
+
+    if (!isVerified) {
       return res.status(403).json({
         message: 'Please verify the OTP before logging in.'
       });
@@ -300,6 +345,11 @@ app.post('/api/login', async (req, res) => {
 
     // Remove OTP verification after login
     verifiedLogins.delete(email);
+    try {
+      await sql`
+        UPDATE users SET is_otp_verified = FALSE, otp_code = NULL WHERE LOWER(email) = ${email}
+      `;
+    } catch (dbErr) {}
 
     return res.status(200).json({
       message: 'Login successful!',

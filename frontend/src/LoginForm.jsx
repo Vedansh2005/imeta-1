@@ -49,6 +49,8 @@ export default function AuthForm() {
     setOtpVerified(false);
   };
 
+  const API_BASE_URL = 'https://imeta-1.vercel.app';
+
   // Send login OTP
   const handleSendOtp = async () => {
     if (!email || !password) {
@@ -62,7 +64,7 @@ export default function AuthForm() {
       setMessage('');
 
       const response = await fetch(
-        'https://imeta-1.vercel.app/api/send-login-otp',
+        `${API_BASE_URL}/api/send-login-otp`,
         {
           method: 'POST',
           headers: {
@@ -82,9 +84,16 @@ export default function AuthForm() {
         setOtpVerified(false);
         setOtp('');
         setIsSuccess(true);
+        const otpCode = data.otp || '';
         setMessage(
-          'OTP generated. Check the backend console.'
+          otpCode
+            ? `OTP generated: ${otpCode} (Also printed in F12 console!)`
+            : 'OTP generated. Check the browser console (F12)!'
         );
+        console.log('================================');
+        console.log(`Login OTP for ${email}: ${otpCode}`);
+        console.log('OTP valid for 5 minutes');
+        console.log('================================');
       } else {
         setIsSuccess(false);
         setMessage(
@@ -122,7 +131,7 @@ export default function AuthForm() {
       setMessage('');
 
       const response = await fetch(
-        'https://imeta-1.vercel.app/api/verify-login-otp',
+        `${API_BASE_URL}/api/verify-login-otp`,
         {
           method: 'POST',
           headers: {
