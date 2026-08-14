@@ -36,6 +36,14 @@ app.post('/api/send-login-otp', async (req, res) => {
       });
     }
 
+    // Validate Email format
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        message: 'Please enter a valid email address (e.g. user@gmail.com).'
+      });
+    }
+
     // Find user
     const users = await sql`
       SELECT * FROM users
@@ -184,23 +192,37 @@ app.post('/api/signup', async (req, res) => {
       });
     }
 
-    // Validate email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (!emailRegex.test(email)) {
+    // Validate Name (only letters and spaces)
+    const nameRegex = /^[a-zA-Z\s]+$/;
+    if (!nameRegex.test(name)) {
       return res.status(400).json({
-        message: 'Invalid email address format.'
+        message: 'Full Name can only contain letters and spaces (no numbers or special characters).'
       });
     }
 
-    // Validate password
+    // Validate Email
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        message: 'Please enter a valid email address (e.g. user@gmail.com).'
+      });
+    }
+
+    // Validate Password
     if (password.length < 6) {
       return res.status(400).json({
         message: 'Password must be at least 6 characters long.'
       });
     }
 
-    // Validate age
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*[\d\W]).{6,}$/;
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({
+        message: 'Password must contain at least one letter and one number or special character.'
+      });
+    }
+
+    // Validate Age
     if (
       isNaN(parsedAge) ||
       parsedAge < 13 ||

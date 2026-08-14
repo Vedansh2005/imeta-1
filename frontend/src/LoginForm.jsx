@@ -51,11 +51,40 @@ export default function AuthForm() {
 
   const API_BASE_URL = 'https://imeta-1.vercel.app';
 
+  // Validation helpers
+  const validateName = (val) => {
+    const regex = /^[a-zA-Z\s]+$/;
+    return regex.test(val.trim());
+  };
+
+  const validateEmail = (val) => {
+    const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return regex.test(val.trim());
+  };
+
+  const validatePassword = (val) => {
+    if (val.length < 6) return false;
+    const regex = /^(?=.*[A-Za-z])(?=.*[\d\W]).{6,}$/;
+    return regex.test(val);
+  };
+
   // Send login OTP
   const handleSendOtp = async () => {
     if (!email || !password) {
       setIsSuccess(false);
       setMessage('Enter your email and password first.');
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      setIsSuccess(false);
+      setMessage('Please enter a valid email address (e.g. user@gmail.com).');
+      return;
+    }
+
+    if (!validatePassword(password)) {
+      setIsSuccess(false);
+      setMessage('Password must be at least 6 characters long and include letters and numbers or special characters.');
       return;
     }
 
@@ -177,28 +206,65 @@ export default function AuthForm() {
     setLoading(true);
     setMessage('');
 
-    // Check signup password
-    if (
-      isSignup &&
-      password !== confirmPassword
-    ) {
+    // Validate email
+    if (!validateEmail(email)) {
       setIsSuccess(false);
-      setMessage('Passwords do not match.');
+      setMessage('Please enter a valid email address (e.g. user@gmail.com).');
       setLoading(false);
       return;
     }
 
-    // Check login OTP
-    if (
-      !isSignup &&
-      !otpVerified
-    ) {
+    // Validate password
+    if (!validatePassword(password)) {
       setIsSuccess(false);
-      setMessage(
-        'Please verify the OTP before logging in.'
-      );
+      setMessage('Password must be at least 6 characters long and include letters and numbers or special characters.');
       setLoading(false);
       return;
+    }
+
+    if (isSignup) {
+      // Validate name
+      if (!name || !validateName(name)) {
+        setIsSuccess(false);
+        setMessage('Full Name can only contain letters and spaces (no numbers or special characters).');
+        setLoading(false);
+        return;
+      }
+
+      // Check signup password
+      if (password !== confirmPassword) {
+        setIsSuccess(false);
+        setMessage('Passwords do not match.');
+        setLoading(false);
+        return;
+      }
+
+      // Check age
+      const parsedAge = parseInt(age, 10);
+      if (isNaN(parsedAge) || parsedAge < 13 || parsedAge > 120) {
+        setIsSuccess(false);
+        setMessage('Please enter a valid age between 13 and 120.');
+        setLoading(false);
+        return;
+      }
+
+      // Check college
+      if (!college || !college.trim()) {
+        setIsSuccess(false);
+        setMessage('College / University is required.');
+        setLoading(false);
+        return;
+      }
+    } else {
+      // Check login OTP
+      if (!otpVerified) {
+        setIsSuccess(false);
+        setMessage(
+          'Please verify the OTP before logging in.'
+        );
+        setLoading(false);
+        return;
+      }
     }
 
     try {
@@ -346,9 +412,10 @@ export default function AuthForm() {
               type="text"
               placeholder="John Doe"
               value={name}
-              onChange={(e) =>
-                setName(e.target.value)
-              }
+              onChange={(e) => {
+                const sanitized = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                setName(sanitized);
+              }}
               className="form-input"
               required
             />
