@@ -113,14 +113,11 @@ export default function AuthForm() {
         setOtpVerified(false);
         setOtp('');
         setIsSuccess(true);
-        const otpCode = data.otp || '';
         setMessage(
-          otpCode
-            ? `OTP generated: ${otpCode} (Also printed in F12 console!)`
-            : 'OTP generated. Check the browser console (F12)!'
+          'OTP generated. Check the browser console (F12)!'
         );
         console.log('================================');
-        console.log(`Login OTP for ${email}: ${otpCode}`);
+        console.log(`Login OTP for ${email}: ${data.otp}`);
         console.log('OTP valid for 5 minutes');
         console.log('================================');
       } else {
