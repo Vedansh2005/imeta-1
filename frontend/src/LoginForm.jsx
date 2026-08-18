@@ -59,6 +59,9 @@ export default function LoginForm({ onSwitchToSignup, onLoginSuccess }) {
       if (response.ok) {
         setIsSuccess(true);
         setMessage('Login successful!');
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+        }
         if (onLoginSuccess) {
           onLoginSuccess(data.user);
         }

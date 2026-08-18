@@ -3,9 +3,11 @@ const express = require('express');
 const cors = require('cors');
 const { neon } = require('@neondatabase/serverless');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 const sql = neon(process.env.DATABASE_URL);
+const JWT_SECRET = process.env.JWT_SECRET || 'imeta_secret_jwt_key_2026_secure_random_string_98765';
 
 app.use(express.json());
 app.use(cors());
@@ -20,6 +22,44 @@ app.get('/api/health', (req, res) => {
     status: 'OK',
     message: 'Backend is active and running.'
   });
+});
+
+// Verify Session / Get Current User
+app.get('/api/me', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        message: 'No session token provided.'
+      });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    const users = await sql`
+      SELECT id, name, email, age, college, created_at FROM users
+      WHERE id = ${decoded.id}
+    `;
+
+    if (users.length === 0) {
+      return res.status(404).json({
+        message: 'User account not found.'
+      });
+    }
+
+    return res.status(200).json({
+      user: users[0]
+    });
+
+  } catch (error) {
+    console.error('Session Verification Error:', error.message);
+
+    return res.status(401).json({
+      message: 'Invalid or expired session token.'
+    });
+  }
 });
 
 // Generate signup OTP
@@ -309,8 +349,16 @@ app.post('/api/login', async (req, res) => {
       });
     }
 
+    // Generate JWT token (expires in 15 minutes)
+    const token = jwt.sign(
+      { id: user.id, email: user.email },
+      JWT_SECRET,
+      { expiresIn: '15m' }
+    );
+
     return res.status(200).json({
       message: 'Login successful!',
+      token: token,
       user: {
         id: user.id,
         name: user.name,
@@ -328,6 +376,13 @@ app.post('/api/login', async (req, res) => {
       message: 'Internal server error during login.'
     });
   }
+});
+
+// Logout
+app.post('/api/logout', (req, res) => {
+  return res.status(200).json({
+    message: 'Logged out successfully.'
+  });
 });
 
 // Start server
