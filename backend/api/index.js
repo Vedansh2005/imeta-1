@@ -10,9 +10,9 @@ const sql = neon(process.env.DATABASE_URL);
 app.use(express.json());
 app.use(cors());
 
-// Store login OTPs temporarily
-const otpStore = new Map();
-const verifiedLogins = new Set();
+// Store signup OTPs temporarily
+const signupOtpStore = new Map();
+const verifiedSignups = new Set();
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -22,17 +22,16 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Generate login OTP
-app.post('/api/send-login-otp', async (req, res) => {
+// Generate signup OTP
+app.post('/api/send-signup-otp', async (req, res) => {
   try {
-    let { email, password } = req.body;
+    let { email } = req.body;
 
     email = email ? email.trim().toLowerCase() : '';
-    password = password ? password.trim() : '';
 
-    if (!email || !password) {
+    if (!email) {
       return res.status(400).json({
-        message: 'Email and password are required.'
+        message: 'Email address is required.'
       });
     }
 
@@ -44,29 +43,15 @@ app.post('/api/send-login-otp', async (req, res) => {
       });
     }
 
-    // Find user
+    // Check if user already exists
     const users = await sql`
-      SELECT * FROM users
+      SELECT id FROM users
       WHERE LOWER(email) = ${email}
     `;
 
-    if (users.length === 0) {
-      return res.status(401).json({
-        message: 'Invalid email or password.'
-      });
-    }
-
-    const user = users[0];
-
-    // Check password
-    const isPasswordValid = await bcrypt.compare(
-      password,
-      user.password
-    );
-
-    if (!isPasswordValid) {
-      return res.status(401).json({
-        message: 'Invalid email or password.'
+    if (users.length > 0) {
+      return res.status(409).json({
+        message: 'An account with this email address already exists.'
       });
     }
 
@@ -76,17 +61,17 @@ app.post('/api/send-login-otp', async (req, res) => {
     ).toString();
 
     // OTP expires in 5 minutes
-    otpStore.set(email, {
+    signupOtpStore.set(email, {
       otp: otp,
       expiresAt: Date.now() + 5 * 60 * 1000
     });
 
-    // Reset previous verification
-    verifiedLogins.delete(email);
+    // Reset previous signup verification
+    verifiedSignups.delete(email);
 
     // Show OTP in console
     console.log('================================');
-    console.log(`Login OTP for ${email}: ${otp}`);
+    console.log(`Signup OTP for ${email}: ${otp}`);
     console.log('OTP valid for 5 minutes');
     console.log('================================');
 
@@ -96,7 +81,7 @@ app.post('/api/send-login-otp', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Send Login OTP Error:', error);
+    console.error('Send Signup OTP Error:', error);
 
     return res.status(500).json({
       message: 'Failed to generate OTP.'
@@ -104,8 +89,8 @@ app.post('/api/send-login-otp', async (req, res) => {
   }
 });
 
-// Verify login OTP
-app.post('/api/verify-login-otp', async (req, res) => {
+// Verify signup OTP
+app.post('/api/verify-signup-otp', async (req, res) => {
   try {
     let { email, otp } = req.body;
 
@@ -118,7 +103,7 @@ app.post('/api/verify-login-otp', async (req, res) => {
       });
     }
 
-    const storedOtp = otpStore.get(email);
+    const storedOtp = signupOtpStore.get(email);
 
     if (!storedOtp) {
       return res.status(400).json({
@@ -128,7 +113,7 @@ app.post('/api/verify-login-otp', async (req, res) => {
 
     // Check expiry
     if (Date.now() > storedOtp.expiresAt) {
-      otpStore.delete(email);
+      signupOtpStore.delete(email);
 
       return res.status(400).json({
         message: 'OTP has expired. Please generate a new OTP.'
@@ -142,18 +127,18 @@ app.post('/api/verify-login-otp', async (req, res) => {
       });
     }
 
-    // OTP verified
-    otpStore.delete(email);
-    verifiedLogins.add(email);
+    // OTP verified for signup
+    signupOtpStore.delete(email);
+    verifiedSignups.add(email);
 
-    console.log(`Login OTP verified for ${email}`);
+    console.log(`Signup OTP verified for ${email}`);
 
     return res.status(200).json({
       message: 'OTP verified successfully.'
     });
 
   } catch (error) {
-    console.error('Verify Login OTP Error:', error);
+    console.error('Verify Signup OTP Error:', error);
 
     return res.status(500).json({
       message: 'Failed to verify OTP.'
@@ -189,6 +174,13 @@ app.post('/api/signup', async (req, res) => {
     ) {
       return res.status(400).json({
         message: 'All fields are required.'
+      });
+    }
+
+    // Check OTP verification
+    if (!verifiedSignups.has(email)) {
+      return res.status(403).json({
+        message: 'Please verify your email address with OTP before registering.'
       });
     }
 
@@ -260,6 +252,9 @@ app.post('/api/signup', async (req, res) => {
       RETURNING id, name, email, age, college, created_at
     `;
 
+    // Clear signup verification
+    verifiedSignups.delete(email);
+
     return res.status(201).json({
       message: 'Account registered successfully!',
       user: newUser[0]
@@ -288,13 +283,6 @@ app.post('/api/login', async (req, res) => {
       });
     }
 
-    // Check OTP verification
-    if (!verifiedLogins.has(email)) {
-      return res.status(403).json({
-        message: 'Please verify the OTP before logging in.'
-      });
-    }
-
     // Find user
     const users = await sql`
       SELECT * FROM users
@@ -320,9 +308,6 @@ app.post('/api/login', async (req, res) => {
         message: 'Invalid email or password.'
       });
     }
-
-    // Remove OTP verification after login
-    verifiedLogins.delete(email);
 
     return res.status(200).json({
       message: 'Login successful!',
