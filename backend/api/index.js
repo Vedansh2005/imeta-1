@@ -349,11 +349,11 @@ app.post('/api/login', async (req, res) => {
       });
     }
 
-    // Generate JWT token (expires in 15 minutes)
+    // Generate JWT token (expires in 10 hours)
     const token = jwt.sign(
       { id: user.id, email: user.email },
       JWT_SECRET,
-      { expiresIn: '15m' }
+      { expiresIn: '10h' }
     );
 
     return res.status(200).json({
