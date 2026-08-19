@@ -7,7 +7,11 @@ const jwt = require('jsonwebtoken');
 
 const app = express();
 const sql = neon(process.env.DATABASE_URL);
-const JWT_SECRET = process.env.JWT_SECRET || 'imeta_secret_jwt_key_2026_secure_random_string_98765';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  console.warn('WARNING: JWT_SECRET environment variable is not defined!');
+}
 
 app.use(express.json());
 app.use(cors());
