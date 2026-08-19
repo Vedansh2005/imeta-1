@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import LoginForm from './LoginForm';
 import SignupForm from './SignupForm';
 import Dashboard from './Dashboard';
+import './LoginForm.css';
 
 function App() {
   const [currentView, setCurrentView] = useState('login'); // 'login' | 'signup' | 'dashboard'
@@ -71,7 +72,6 @@ function App() {
 
     const resetTimer = () => {
       clearTimeout(inactivityTimer);
-      // 15 minutes in milliseconds
       inactivityTimer = setTimeout(() => {
         handleLogout();
       }, 15 * 60 * 1000);
@@ -93,27 +93,31 @@ function App() {
     };
   }, [user]);
 
-  if (loadingSession) {
-    return (
-      <div style={{ textAlign: 'center', marginTop: '60px', fontFamily: 'sans-serif', color: '#6b7280' }}>
-        Verifying session...
-      </div>
-    );
-  }
-
-  if (user && currentView === 'dashboard') {
-    return <Dashboard user={user} onLogout={handleLogout} />;
-  }
-
-  if (currentView === 'signup') {
-    return <SignupForm onSwitchToLogin={() => setCurrentView('login')} />;
-  }
-
   return (
-    <LoginForm
-      onSwitchToSignup={() => setCurrentView('signup')}
-      onLoginSuccess={handleLoginSuccess}
-    />
+    <div className="app-container">
+      {/* Background Animated Gradient Orbs */}
+      <div className="bg-orb bg-orb-1"></div>
+      <div className="bg-orb bg-orb-2"></div>
+      <div className="bg-orb bg-orb-3"></div>
+
+      {loadingSession ? (
+        <div className="auth-card" style={{ textAlign: 'center', padding: '40px' }}>
+          <div className="spinner" style={{ margin: '0 auto 16px', width: '32px', height: '32px' }}></div>
+          <div style={{ color: '#94a3b8', fontSize: '14px', fontWeight: '600' }}>
+            Verifying session...
+          </div>
+        </div>
+      ) : user && currentView === 'dashboard' ? (
+        <Dashboard user={user} onLogout={handleLogout} />
+      ) : currentView === 'signup' ? (
+        <SignupForm onSwitchToLogin={() => setCurrentView('login')} />
+      ) : (
+        <LoginForm
+          onSwitchToSignup={() => setCurrentView('signup')}
+          onLoginSuccess={handleLoginSuccess}
+        />
+      )}
+    </div>
   );
 }
 

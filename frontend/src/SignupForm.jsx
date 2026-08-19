@@ -6,6 +6,7 @@ export default function SignupForm({ onSwitchToLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [age, setAge] = useState('');
   const [college, setCollege] = useState('');
 
@@ -41,6 +42,20 @@ export default function SignupForm({ onSwitchToLogin }) {
     const regex = /^(?=.*[A-Za-z])(?=.*[\d\W]).{6,}$/;
     return regex.test(val);
   };
+
+  // Calculate password strength
+  const getPasswordStrength = () => {
+    if (!password) return { width: '0%', color: '#64748b', text: '' };
+    if (password.length < 6) return { width: '33%', color: '#ef4444', text: 'Weak' };
+    const hasLetter = /[a-zA-Z]/.test(password);
+    const hasNumOrSpec = /[\d\W]/.test(password);
+    if (password.length >= 8 && hasLetter && hasNumOrSpec) {
+      return { width: '100%', color: '#10b981', text: 'Strong' };
+    }
+    return { width: '66%', color: '#f59e0b', text: 'Medium' };
+  };
+
+  const strength = getPasswordStrength();
 
   // Send signup OTP
   const handleSendOtp = async () => {
@@ -234,87 +249,115 @@ export default function SignupForm({ onSwitchToLogin }) {
   };
 
   return (
-    <div className="auth-card">
-      <h2 className="auth-title">Student Registration</h2>
+    <div className="auth-card auth-card-wide">
+      <div className="brand-header">
+        <div className="brand-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="8.5" cy="7" r="4"/>
+            <polyline points="17 11 19 13 23 9"/>
+          </svg>
+          Student Registration
+        </div>
+        <h2 className="auth-title">Create Account</h2>
+        <p className="auth-subtitle">Verify your email and complete registration</p>
+      </div>
 
       <form onSubmit={handleSubmit}>
         {/* Full Name */}
         <div className="form-group">
           <label className="form-label">Full Name</label>
-          <input
-            type="text"
-            placeholder="John Doe"
-            value={name}
-            onChange={(e) => {
-              const sanitized = e.target.value.replace(/[^a-zA-Z\s]/g, '');
-              setName(sanitized);
-            }}
-            className="form-input"
-            required
-          />
+          <div className="input-wrapper">
+            <svg className="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <input
+              type="text"
+              placeholder="John Doe"
+              value={name}
+              onChange={(e) => {
+                const sanitized = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                setName(sanitized);
+              }}
+              className="form-input"
+              required
+            />
+          </div>
         </div>
 
-        {/* Email */}
+        {/* Email & OTP Request */}
         <div className="form-group">
           <label className="form-label">Email Address</label>
           <div style={{ display: 'flex', gap: '10px' }}>
-            <input
-              type="email"
-              placeholder="student@example.com"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setOtpSent(false);
-                setOtpVerified(false);
-                setOtp('');
-              }}
-              className="form-input"
-              style={{ flex: 1 }}
-              required
-            />
+            <div className="input-wrapper" style={{ flex: 1 }}>
+              <svg className="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+              <input
+                type="email"
+                placeholder="student@example.com"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setOtpSent(false);
+                  setOtpVerified(false);
+                  setOtp('');
+                }}
+                className="form-input"
+                required
+              />
+            </div>
             <button
               type="button"
               onClick={handleSendOtp}
               disabled={loading || !email || !validateEmail(email) || otpVerified}
-              className="submit-btn"
-              style={{ width: '130px', marginTop: 0 }}
+              className="action-btn-inline"
             >
               {otpSent ? 'Resend OTP' : 'Send OTP'}
             </button>
           </div>
         </div>
 
-        {/* OTP Input */}
+        {/* OTP Input & Verification */}
         {otpSent && (
           <div className="form-group">
-            <label className="form-label">Enter OTP</label>
+            <label className="form-label">Enter 6-Digit OTP</label>
             <div style={{ display: 'flex', gap: '10px' }}>
-              <input
-                type="text"
-                placeholder="Enter 6-digit OTP"
-                value={otp}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/\D/g, '');
-                  setOtp(value.slice(0, 6));
-                }}
-                maxLength="6"
-                className="form-input"
-                style={{ flex: 1 }}
-                disabled={otpVerified}
-              />
+              <div className="input-wrapper" style={{ flex: 1 }}>
+                <svg className="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                <input
+                  type="text"
+                  placeholder="123456"
+                  value={otp}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    setOtp(value.slice(0, 6));
+                  }}
+                  maxLength="6"
+                  className="form-input"
+                  disabled={otpVerified}
+                />
+              </div>
               <button
                 type="button"
                 onClick={handleVerifyOtp}
                 disabled={loading || otp.length !== 6 || otpVerified}
-                className="submit-btn"
-                style={{ width: '130px', marginTop: 0 }}
+                className="action-btn-inline"
               >
-                {otpVerified ? 'Verified' : 'Verify OTP'}
+                {otpVerified ? '✓ Verified' : 'Verify OTP'}
               </button>
             </div>
             {otpVerified && (
-              <div style={{ marginTop: '8px', color: 'green', fontSize: '14px' }}>
-                ✓ Email verified successfully with OTP
+              <div style={{ marginTop: '8px', color: '#34d399', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                Email verified with OTP
               </div>
             )}
           </div>
@@ -324,52 +367,99 @@ export default function SignupForm({ onSwitchToLogin }) {
         <div className="form-row">
           <div className="form-col-1">
             <label className="form-label">Age</label>
-            <input
-              type="number"
-              placeholder="20"
-              value={age}
-              onChange={(e) => setAge(e.target.value)}
-              className="form-input"
-              required
-            />
+            <div className="input-wrapper">
+              <input
+                type="number"
+                placeholder="20"
+                value={age}
+                onChange={(e) => setAge(e.target.value)}
+                className="form-input form-input-no-icon"
+                required
+              />
+            </div>
           </div>
           <div className="form-col-2">
             <label className="form-label">College / University</label>
-            <input
-              type="text"
-              placeholder="MIT, Harvard, etc."
-              value={college}
-              onChange={(e) => setCollege(e.target.value)}
-              className="form-input"
-              required
-            />
+            <div className="input-wrapper">
+              <input
+                type="text"
+                placeholder="MIT, Stanford, etc."
+                value={college}
+                onChange={(e) => setCollege(e.target.value)}
+                className="form-input form-input-no-icon"
+                required
+              />
+            </div>
           </div>
         </div>
 
         {/* Password */}
         <div className="form-group">
           <label className="form-label">Password</label>
-          <input
-            type="password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="form-input"
-            required
-          />
+          <div className="input-wrapper">
+            <svg className="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="form-input"
+              required
+            />
+            <button
+              type="button"
+              className="toggle-password-btn"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              )}
+            </button>
+          </div>
+          {/* Password Strength Indicator */}
+          {password && (
+            <div className="strength-meter">
+              <div className="strength-bar">
+                <div
+                  className="strength-fill"
+                  style={{ width: strength.width, backgroundColor: strength.color }}
+                ></div>
+              </div>
+              <span className="strength-text" style={{ color: strength.color }}>
+                {strength.text}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Confirm Password */}
         <div className="form-group">
           <label className="form-label">Confirm Password</label>
-          <input
-            type="password"
-            placeholder="••••••••"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className="form-input"
-            required
-          />
+          <div className="input-wrapper">
+            <svg className="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <input
+              type="password"
+              placeholder="••••••••"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="form-input"
+              required
+            />
+          </div>
         </div>
 
         {/* Submit */}
@@ -378,13 +468,38 @@ export default function SignupForm({ onSwitchToLogin }) {
           disabled={loading || !otpVerified}
           className="submit-btn"
         >
-          {loading ? 'Processing...' : 'Register'}
+          {loading ? (
+            <>
+              <div className="spinner"></div>
+              Processing...
+            </>
+          ) : (
+            <>
+              Register Account
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <line x1="5" y1="12" x2="19" y2="12"/>
+                <polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </>
+          )}
         </button>
       </form>
 
-      {/* Message */}
+      {/* Message Banner */}
       {message && (
-        <div className={`feedback-message ${isSuccess ? 'success' : 'error'}`}>
+        <div className={`feedback-banner ${isSuccess ? 'success' : 'error'}`}>
+          {isSuccess ? (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+          )}
           {message}
         </div>
       )}
